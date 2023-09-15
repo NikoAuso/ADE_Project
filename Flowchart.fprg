@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="3.0">
+    <attributes>
+        <attribute name="name" value=""/>
+        <attribute name="authors" value="nikoa"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2023-09-15 09:46:53 "/>
+        <attribute name="created" value="bmlrb2E7Q0hBUklTQVJELVBSTzsyMDIzLTA5LTE0OyIxMTowNTo1OCAiOzI2Njk="/>
+        <attribute name="edited" value="bmlrb2E7Q0hBUklTQVJELVBSTzsyMDIzLTA5LTE1OyIwOTo0Njo1MyAiOzM7Mjc4Nw=="/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="primoSegnaleArrivato, contatoreRicezione, ricezioneCompletata" type="Integer" array="False" size=""/>
+            <declare name="datiCatturati" type="Integer" array="True" size="32"/>
+            <assign variable="primoSegnaleArrivato" expression="0"/>
+            <assign variable="contatoreRicezione" expression="0"/>
+            <assign variable="ricezioneCompletata" expression="0"/>
+            <call expression="setup()"/>
+            <while expression="true">
+                <comment text="Attendo l'arrivo di un impulso nel pin 8"/>
+                <if expression="&quot;Arriva l'impulso&quot;">
+                    <then>
+                        <call expression="ISR(vettoreTimer1)"/>
+                    </then>
+                    <else/>
+                </if>
+                <call expression="getCommand()"/>
+            </while>
+        </body>
+    </function>
+    <function name="getCommand" type="None" variable="">
+        <parameters/>
+        <body>
+            <if expression="ricezioneCompletata">
+                <then>
+                    <declare name="streamRicevuto" type="String" array="False" size=""/>
+                    <for variable="i" start="0" end="32" direction="inc" step="1">
+                        <if expression="&quot;1.0 ms &lt; datiCatturati[i] &lt; 1.2ms&quot;">
+                            <then>
+                                <assign variable="receiveStream" expression="&quot;aggiungo 0 allo stream ricevuto&quot;"/>
+                            </then>
+                            <else>
+                                <if expression="&quot;2.1 ms &lt; datiCatturati[i] &lt; 2.4ms&quot;">
+                                    <then>
+                                        <assign variable="streamRicevuto" expression="&quot;aggiungo 1 allo stream ricevuto&quot;"/>
+                                    </then>
+                                    <else/>
+                                </if>
+                            </else>
+                        </if>
+                    </for>
+                    <output expression="&quot;0xstreamRicevuto convertito in esadecimale&quot;" newline="True"/>
+                </then>
+                <else>
+                    <breakpoint expression="&quot;return 0&quot;" always="False"/>
+                </else>
+            </if>
+        </body>
+    </function>
+    <function name="ISR" type="None" variable="">
+        <parameters>
+            <parameter name="vettoreTimer1" type="String" array="False"/>
+        </parameters>
+        <body>
+            <if expression="primoSegnaleArrivato">
+                <then>
+                    <assign variable="datiCatturati[contatoreRicezione]" expression="ICR1"/>
+                    <if expression="datiCatturati[contatoreRicezione] &gt; 625">
+                        <then>
+                            <assign variable="contatoreRicezione" expression="0"/>
+                            <assign variable="ricezioneCompletata" expression="0"/>
+                        </then>
+                        <else>
+                            <assign variable="contatoreRicezione" expression="contatoreRicezione+1"/>
+                            <if expression="contatoreRicezione == 32">
+                                <then>
+                                    <assign variable="ricezioneCompletata" expression="1"/>
+                                </then>
+                                <else/>
+                            </if>
+                        </else>
+                    </if>
+                </then>
+                <else>
+                    <assign variable="primoSegnaleArrivato" expression="1"/>
+                    <comment text="Inizio la lettura dal secondo fronte di salita, ovvero dopo il burst di impulsi anticipato di 9 ms "/>
+                </else>
+            </if>
+        </body>
+    </function>
+    <function name="setup" type="None" variable="">
+        <parameters/>
+        <body>
+            <assign variable="pin8" expression="INPUT"/>
+            <comment text="Il pin 8 &#232; impostato come INPUT"/>
+            <assign variable="TCCR1A" expression="0"/>
+            <assign variable="TCCR1B" expression="&quot;prescalare a 64&quot;"/>
+            <assign variable="TCCR1C" expression="0"/>
+            <comment text="I timer 0 e 2 sono impostati a 0, mentre il timer 1 &#232; impostato con prescalare 64"/>
+            <assign variable="TIMSK1" expression="&quot;Abilita l'interrupt di cattura dell'input&quot;"/>
+            <call expression="sei()"/>
+            <comment text="Abilito gli interrupt globali"/>
+        </body>
+    </function>
+</flowgorithm>
